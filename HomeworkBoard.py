@@ -1,42 +1,64 @@
-import os
-print(
-    """
-******************************************
-   ******      **       ******      **    
-  **////**    ****     **////**    ****   
- **    //    **//**   **    //    **//**  
-/**         **  //** /**         **  //** 
-/**        **********/**        **********
-//**    **/**//////**//**    **/**//////**
- //****** /**     /** //****** /**     /**
-  //////  //      //   //////  //      // 
-******************************************
-Welcome to CACA HomeworkBoard.
-""")
-print("Reading USERPROFILE... ", end='')
-user_profile = os.environ['USERPROFILE']
-print("\033[1;32mDone!\033[0m")
-print("Reading template.docx... ", end='')
-f1 = open("template.docx", "rb")
-print("\033[1;32mDone!\033[0m")
-print("Clearing 作业.docx... ", end='')
-f2 = open(f"{user_profile}\\Desktop\\作业.docx", "wb")
-print("\033[1;32mDone!\033[0m")
-print("Copying template.docx to 作业.docx... ", end='')
-f2.write(f1.read())
-print("\033[1;32mDone!\033[0m")
-"""print("Comparing template.docx and 作业.docx")
-f2.close()
-f3=open(f"{user_profile}\\Desktop\\作业.docx", "rb")
-if f3.read() == f1.read():
-    print("\\033[1;32mSUCCESSFULLY COPIED template.docx TO 作业.docx!!!\033[0m")
-else:
-    print("\033[1;31mFAILED!!!\033[0m")
-    print("\033[1;31mPlease contact @Carrot729 on Github\033[0m")"""
-print("Closing template.docx... ", end='')
-f1.close()
-print("\033[1;32mDone!\033[0m")
-print("Closing 作业.docx... ", end='')
-f3.close()
-print("\033[1;32mDone!\033[0m")
-os.system('Pause')
+import os, datetime
+
+
+class HomeWorkBoard:
+    def __init__(self, backup_dir='.\\backup\\',
+                 template_name='template.docx',
+                 homework='作业.docx',
+                 desktop_path=os.environ.get("USERPROFILE")+'\\Desktop\\'):
+        self.welcome()
+        self.backup_dir = backup_dir
+        self.template_name = template_name
+        self.homework = homework
+        self.desktop_path = desktop_path
+        self.homework_file_read = open(self.desktop_path + self.homework, 'rb')
+        self.template_file = open(self.template_name, 'rb')
+        self.backup_file = open(self.backup_dir + str(datetime.date.today()) + '.docx', 'wb')
+
+    @staticmethod
+    def success():
+        print("\033[32mDone!!!\033[0m")
+
+    def make_backup(self):
+        try:
+            print('Making backup... ')
+            self.backup_file.write(self.homework_file_read.read())
+        except Exception as e:
+            print(e)
+            exit(1)
+        else:
+            self.success()
+
+    def make_homework(self):
+        self.homework_file = open(self.desktop_path + self.homework, 'wb')
+        try:
+            print('Making homework... ')
+            self.homework_file.write(self.template_file.read())
+        except Exception as e:
+            print(e)
+            exit(1)
+        else:
+            self.success()
+        finally:
+            self.homework_file.close()
+
+    @staticmethod
+    def welcome():
+        print('''
+*************************************
+ ######     ###     ######     ###    
+##    ##   ## ##   ##    ##   ## ##   
+##        ##   ##  ##        ##   ##  
+##       ##     ## ##       ##     ## 
+##       ######### ##       ######### 
+##    ## ##     ## ##    ## ##     ## 
+ ######  ##     ##  ######  ##     ## 
+*************************************
+        ''')
+        print('Welcome to HomeworkBoard.')
+
+    def __del__(self):
+        self.backup_file.close()
+        self.template_file.close()
+        self.homework_file_read.close()
+
