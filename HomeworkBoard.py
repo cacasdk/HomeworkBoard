@@ -1,5 +1,12 @@
 import os, datetime,time,json
 
+DEFAULT_SETTING = {
+    "template_path":".\\template.docx",
+    "homework_path":"{0}\\Desktop\\homework.docx".format(os.environ['USERPROFILE']),
+    "backup_path":".\\backup"
+}
+SETTING_FILE_NAME = 'HomeworkBoard.setting.caca.json'
+
 def output(word: str = '', end: str = '') -> str:
     """
     make SPECIAL output!!!
@@ -13,25 +20,23 @@ def output(word: str = '', end: str = '') -> str:
     print(end)
     return word
 
-DEFAULT_SETTING = {
-    "template_path":".\\template.docx",
-    "homework_path":"{0}\\Desktop\\homework.docx".format(os.environ['USERPROFILE']),
-    "backup_path":".\\backup"
-}
-SETTING_FILE_NAME = 'HomeworkBoard.setting.caca.json'
-
-print('''
-    *************************************
-     ######     ###     ######     ###    
-    ##    ##   ## ##   ##    ##   ## ##   
-    ##        ##   ##  ##        ##   ##  
-    ##       ##     ## ##       ##     ## 
-    ##       ######### ##       ######### 
-    ##    ## ##     ## ##    ## ##     ## 
-     ######  ##     ##  ######  ##     ## 
-    *************************************
-            ''')
-output('Welcome to HomeworkBoard.')
+def welcome() -> None:
+    """
+    Welcome!!!
+    :return:
+    """
+    print('''
+*************************************
+ ######     ###     ######     ###    
+##    ##   ## ##   ##    ##   ## ##   
+##        ##   ##  ##        ##   ##  
+##       ##     ## ##       ##     ## 
+##       ######### ##       ######### 
+##    ## ##     ## ##    ## ##     ## 
+ ######  ##     ##  ######  ##     ## 
+*************************************
+    ''')
+    output('Welcome to HomeworkBoard.')
 
 def read_setting() -> dict:
     """
@@ -65,6 +70,26 @@ def make_backup(homework:str,backup:str) -> bool:
         backup_file.write(homework_file.read())
         homework_file.close()
         backup_file.close()
+    except Exception as e:
+        print(e)
+    else:
+        success=True
+    return success
+
+def make_homework(homework:str,template:str) -> bool:
+    """
+    Make homework file.
+    :param homework: homework file
+    :param template: template file
+    :return: success
+    """
+    success=False
+    try:
+        homework_file=open(homework,'wb')
+        template_file=open(template, 'wb')
+        homework_file.write(template_file.read())
+        homework_file.close()
+        template_file.close()
     except Exception as e:
         print(e)
     else:
