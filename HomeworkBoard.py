@@ -58,10 +58,15 @@ def make_backup(homework:str,backup:str) -> bool:
     :param backup: Backup file
     :return: success
     """
-    success=0
+    success=False
     try:
         homework_file=open(homework,'rb')
         backup_file=open(backup,'wb')
         backup_file.write(homework_file.read())
-    except :
-
+        homework_file.close()
+        backup_file.close()
+    except Exception as e:
+        print(e)
+    else:
+        success=True
+    return success
