@@ -6,7 +6,6 @@ import time
 DEFAULT_SETTING = {
     "template_path": ".\\template.docx",
     "homework_path": "{0}\\Desktop\\homework.docx".format(os.environ['USERPROFILE']),
-    "backup_dir": ".\\backup",
     "backup_suffix": ".docx"
 }
 SETTING_FILE_NAME = 'HomeworkBoard.setting.caca.json'
@@ -111,18 +110,26 @@ def make_homework(homework: str, template: str) -> bool:
 
 def main():
     welcome()
-    try:
+    if os.path.exists(SETTING_FILE_NAME):
         output('Reading setting file...')
         setting = read_setting()
-    except FileNotFoundError:
+    else:
         output('Hmm,maybe that\'s the first use\nInitialing setting file...')
         setting = write_setting(DEFAULT_SETTING)
+    if os.path.exists('.\\backup\\' + '{0}{1}'.format(datetime.date.today(), setting['backup_suffix'])):
+        output('HomeworkBoard was used today, do you want to OVERWRITE it(y/N):',end='')
+        tmp=['y','Y','yes','YES','Yes']
+        if input()  not in tmp:
+            os.system('Pause')
+            exit(0)
     output('Making backup...')
-    if not make_backup(setting['homework_path'],
-                       setting['backup_dir'] + '\\{0}{1}'.format(datetime.date.today(), setting['backup_suffix'])):
+    if not os.path.exists('backup'):
+        os.mkdir('backup')
+    if not make_backup(setting['homework_path'],'.\\backup\\' + '{0}{1}'.format(datetime.date.today(), setting['backup_suffix'])):
         output('Oops,there is a mistake in make_backup')
         os.system('Pause')
         exit(1)
+    output('Making homework...')
     if not make_homework(setting['homework_path'], setting['template_path']):
         output('Oops,there is a mistake in make_homework')
         os.system('Pause')
