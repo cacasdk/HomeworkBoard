@@ -1,35 +1,29 @@
 import datetime
 import json
 import os
-import time
+import logging
 
-DEFAULT_SETTING = {
+# 默认配置设置，包括模板路径、作业路径和备份后缀
+DEFAULT_CONFIG = {
     "template_path": ".\\template.docx",
     "homework_path": "{0}\\Desktop\\homework.docx".format(os.environ['USERPROFILE']),
     "backup_suffix": ".docx"
 }
-SETTING_FILE_NAME = 'HomeworkBoard.setting.caca.json'
 
-
-def output(word: str = '', end: str = '') -> str:
-    """
-    make SPECIAL output!!!
-    :param word: the word you say
-    :param end: the end part
-    :return: word
-    """
-    for i in word:
-        time.sleep(0.01)
-        print(i, end='')
-    print(end)
-    return word
-
-
+# 设置文件名
+CONFIG_FILE_NAME = 'HomeworkBoard.setting.caca.json'
+LOG_FILE_NAME = 'HomeworkBoard.log.caca.txt'
+# 初始化配置和日志记录器
+config = {}
+logger = logging.getLogger(__name__)
+logger.setLevel(level = logging.INFO)
+handler = logging.FileHandler(LOG_FILE_NAME)
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 def welcome() -> None:
-    """
-    Welcome!!!
-    :return:
-    """
+    """显示欢迎信息"""
     print('''
 *************************************
  ######     ###     ######     ###    
@@ -41,100 +35,78 @@ def welcome() -> None:
  ######  ##     ##  ######  ##     ## 
 *************************************
     ''')
-    output('Welcome to HomeworkBoard.')
+    print('Welcome to CacaHomeworkBoard.')
+    os.system("taskkill /f /t /im WINWORD.EXE")
+    logger.info(f"Killed WINWORD.EXE")
 
+def read_config() -> None:
+    """读取设置文件"""
+    global config
+    logger.info('Reading config file...')
+    with open(CONFIG_FILE_NAME, "r") as f:
+        config = json.loads(f.read())
 
-def read_setting() -> dict:
+def write_config() -> None:
+    """初始化设置文件"""
+    global config
+    logger.info('Initialing config file...')
+    config = DEFAULT_CONFIG
+    with open(CONFIG_FILE_NAME, "w") as f:
+        f.write(json.dumps(DEFAULT_CONFIG, sort_keys=True, indent=4, separators=(',', ': ')))
+
+def copy_file(src: str, dst: str) -> None:
     """
-    Read setting file
-    :return: setting
+    拷贝函数
+    :param src: Source file path
+    :param dst: Destination file path
     """
-    with open(SETTING_FILE_NAME, "r") as f:
-        setting = json.loads(f.read())
-
-    return setting
-
-
-def write_setting(setting: dict) -> dict:
-    """
-    Read setting file
-    :param setting: dict
-    :return:
-    """
-    with open(SETTING_FILE_NAME, "w") as f:
-        f.write(json.dumps(setting, sort_keys=True, indent=4, separators=(',', ': ')))
-    return setting
-
-
-def make_backup(homework: str, backup: str) -> bool:
-    """
-    Make backup file.
-    :param homework: homework file
-    :param backup: Backup file
-    :return: success
-    """
-    success = False
     try:
-        homework_file = open(homework, 'rb')
-        backup_file = open(backup, 'wb')
-        backup_file.write(homework_file.read())
-        homework_file.close()
-        backup_file.close()
+        with open(src, 'rb') as src_file, open(dst, 'wb') as dst_file:
+            dst_file.write(src_file.read())
+    except FileNotFoundError:
+        logger.error(f"File not found: {src}")
+        exit(1)
+    except PermissionError:
+        logger.error(f"Permission denied: {src}")
+        exit(1)
     except Exception as e:
-        print(e)
-    else:
-        success = True
-    return success
+        logger.error(f"Error copying file: {e}")
+        exit(1)
 
-
-def make_homework(homework: str, template: str) -> bool:
+def make_backup(homework: str, backup: str) -> None:
     """
-    Make homework file.
+    制作备份
     :param homework: homework file
-    :param template: template file
-    :return: success
+    :param backup: backup file
     """
-    success = False
-    try:
-        homework_file = open(homework, 'wb')
-        template_file = open(template, 'rb')
-        homework_file.write(template_file.read())
-        homework_file.close()
-        template_file.close()
-    except Exception as e:
-        print(e)
-    else:
-        success = True
-    return success
-
-
-def main():
-    welcome()
-    if os.path.exists(SETTING_FILE_NAME):
-        output('Reading setting file...')
-        setting = read_setting()
-    else:
-        output('Hmm,maybe that\'s the first use\nInitialing setting file...')
-        setting = write_setting(DEFAULT_SETTING)
-    if os.path.exists('.\\backup\\' + '{0}{1}'.format(datetime.date.today(), setting['backup_suffix'])):
-        output('HomeworkBoard was used today, do you want to OVERWRITE it(y/N):',end='')
-        tmp=['y','Y','yes','YES','Yes']
-        if input()  not in tmp:
-            os.system('Pause')
+    if os.path.exists(backup):
+        print('CacaHomeworkBoard was used today, do you want to OVERWRITE it (y/N):', end='')
+        if input().strip().lower() not in ['y', 'yes']:
             exit(0)
-    output('Making backup...')
     if not os.path.exists('backup'):
         os.mkdir('backup')
-    if not make_backup(setting['homework_path'],'.\\backup\\' + '{0}{1}'.format(datetime.date.today(), setting['backup_suffix'])):
-        output('Oops,there is a mistake in make_backup')
-        os.system('Pause')
-        exit(1)
-    output('Making homework...')
-    if not make_homework(setting['homework_path'], setting['template_path']):
-        output('Oops,there is a mistake in make_homework')
-        os.system('Pause')
-        exit(1)
-    os.system('Pause')
+    logger.info('Making backup...')
+    copy_file(homework, backup)
 
-if __name__=='__main__':
+def make_homework(homework: str, template: str) -> None:
+    """
+    刷新作业板
+    :param homework: homework file
+    :param template: template file
+    """
+    logger.info('Making homework...')
+    copy_file(template, homework)
+
+def main():
+    """主函数"""
+    global config
+    welcome()
+    if os.path.exists(CONFIG_FILE_NAME):
+        read_config()
+    else:
+        write_config()
+    make_backup(config['homework_path'], os.path.join('backup', f'{datetime.date.today()}{config["backup_suffix"]}'))
+    make_homework(config['homework_path'], config['template_path'])
+
+if __name__ == '__main__':
     main()
