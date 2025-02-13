@@ -15,25 +15,23 @@ HomeworkBoard 是一个用于管理和刷新作业文档的 Python 工具。它�
 
 ### 环境依赖
 
-确保已安装 Python 3.x 版本，并安装以下依赖库：
-```shell
-pip install -r requirements.txt
-```
+确保已安装 Python 3.x 版本
 
 ### 配置
 
-首次运行程序时会自动生成默认配置文件 `HomeworkBoard.setting.caca.json`，您可以根据需要修改此文件中的配置项：
+首次运行程序时会自动生成默认配置文件 `config.json`，您可以根据需要修改此文件中的配置项：
 ```json
 {
-    "backup_suffix": ".docx",  
-    "homework_path": "C:\\Users\\XXX\\Desktop\\homework.docx", 
-    "template_path": ".\\template.docx"
+    "template": ".\\template",
+    "homework": ".\\homework",
+    "backup": ".\\backup",
+    "suffix": ".docx"
 }
 ```
-- `backup_suffix`: 备份文件后缀名，默认为 `.docx`。
-- `homework_path`: 作业文件路径，默认为 `C:\\Users\\XXX\\Desktop\\homework.docx`。
-- `template_path`: 模板文件路径，默认为 `.\\template.docx`。
-
+- `template`: 模板文件路径，默认为 `.\\template`。（不写后缀名）
+- `homework`: 作业文件路径，默认为 `.\\homework`。 （不写后缀名）
+- `backup`: 备份文件文件夹，默认为 `.\\backup`。
+- `suffix`: 文件后缀名，默认为 `.docx`。
 
 ## 使用方法
 

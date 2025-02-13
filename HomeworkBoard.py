@@ -1,27 +1,20 @@
 import datetime
 import json
 import os
-import logging
+from pathlib import Path
 
 # 默认配置设置，包括模板路径、作业路径和备份后缀
 DEFAULT_CONFIG = {
-    "template_path": ".\\template.docx",
-    "homework_path": "{0}\\Desktop\\homework.docx".format(os.environ['USERPROFILE']),
-    "backup_suffix": ".docx"
+    "template": f"{os.path.dirname(os.path.abspath(__file__))}\\template",
+    "homework": f"{os.path.dirname(os.path.abspath(__file__))}\\homework",
+    "backup": f"{os.path.dirname(os.path.abspath(__file__))}\\backup",
+    "suffix": ".docx"
 }
-
-# 设置文件名
-CONFIG_FILE_NAME = 'HomeworkBoard.setting.caca.json'
-LOG_FILE_NAME = 'HomeworkBoard.log.caca.txt'
-# 初始化配置和日志记录器
 config = {}
-logger = logging.getLogger(__name__)
-logger.setLevel(level = logging.INFO)
-handler = logging.FileHandler(LOG_FILE_NAME)
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+# 设置文件名
+CONFIG_FILE_NAME = 'config.json'
+
+
 def welcome() -> None:
     """显示欢迎信息"""
     print('''
@@ -37,22 +30,31 @@ def welcome() -> None:
     ''')
     print('Welcome to CacaHomeworkBoard.')
 
-def read_config() -> None:
+
+def read_config() -> dict:
     """读取设置文件"""
-    global config
-    logger.info('Reading config file...')
-    with open(CONFIG_FILE_NAME, "r") as f:
-        config = json.loads(f.read())
+    config_path = Path(CONFIG_FILE_NAME)
+    if not config_path.exists():
+        return {}
+    try:
+        with open(config_path, "r", encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Error reading config file: {e}")
+        return {}
+
 
 def write_config() -> None:
     """初始化设置文件"""
-    global config
-    logger.info('Initialing config file...')
-    config = DEFAULT_CONFIG
-    with open(CONFIG_FILE_NAME, "w") as f:
-        f.write(json.dumps(DEFAULT_CONFIG, sort_keys=True, indent=4, separators=(',', ': ')))
+    try:
+        with open(CONFIG_FILE_NAME, "w", encoding='utf-8') as f:
+            json.dump(config, f, sort_keys=True, indent=4, ensure_ascii=False)
+    except IOError as e:
+        print(f"Error writing config file: {e}")
+        exit(1)
 
-def copy_file(src: str, dst: str) -> None:
+
+def copy_file(src: Path, dst: Path) -> None:
     """
     拷贝函数
     :param src: Source file path
@@ -62,49 +64,51 @@ def copy_file(src: str, dst: str) -> None:
         with open(src, 'rb') as src_file, open(dst, 'wb') as dst_file:
             dst_file.write(src_file.read())
     except FileNotFoundError:
-        logger.error(f"File not found: {src}")
+        print(f"File not found: {src}")
         exit(1)
     except PermissionError:
-        logger.error(f"Permission denied: {src}")
+        print(f"Permission denied: {src}")
         exit(1)
     except Exception as e:
-        logger.error(f"Error copying file: {e}")
+        print(f"Error copying file: {e}")
         exit(1)
 
-def make_backup(homework: str, backup: str) -> None:
-    """
-    制作备份
-    :param homework: homework file
-    :param backup: backup file
-    """
-    if os.path.exists(backup):
-        print('CacaHomeworkBoard was used today, do you want to OVERWRITE it (y/N):', end='')
+
+def make_backup() -> None:
+    backup_dir = config['backup']
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d")
+    backup_path = Path(backup_dir +'/'+ f'{timestamp}{config["suffix"]}')
+
+    if backup_path.exists():
+        print('Backup file already exists, do you want to overwrite it (y/N):', end='')
         if input().strip().lower() not in ['y', 'yes']:
             exit(0)
-    if not os.path.exists('backup'):
-        os.mkdir('backup')
-    logger.info('Making backup...')
-    copy_file(homework, backup)
 
-def make_homework(homework: str, template: str) -> None:
-    """
-    刷新作业板
-    :param homework: homework file
-    :param template: template file
-    """
-    logger.info('Making homework...')
-    copy_file(template, homework)
+    copy_file(config["homework"]+config["suffix"], backup_path)
+
+
+def make_homework() -> None:
+    copy_file(config["template"]+config["suffix"], config["homework"]+config["suffix"])
+
 
 def main():
     """主函数"""
-    global config
     welcome()
-    if os.path.exists(CONFIG_FILE_NAME):
-        read_config()
-    else:
-        write_config()
-    make_backup(config['homework_path'], os.path.join('backup', f'{datetime.date.today()}{config["backup_suffix"]}'))
-    make_homework(config['homework_path'], config['template_path'])
+    global config
+    config = read_config()
+    if not config:
+        print("Config file not found. Use default configuration?")
+        if input("Enter 'y' to use default configuration: ").strip().lower() == 'y':
+            config = DEFAULT_CONFIG
+            write_config()
+        else:
+            print("Exiting...")
+            exit(0)
+
+    make_backup()
+    make_homework()
+
 
 if __name__ == '__main__':
     main()
